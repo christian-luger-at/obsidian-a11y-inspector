@@ -106,4 +106,44 @@ describe('formatReport', () => {
 		const result = formatReport([], date);
 		expect(result).toContain('2024-01-01');
 	});
+
+	it('includes failureSummary when present on a node', () => {
+		const node = makeNode({ failureSummary: 'Fix any of the following: add aria-label' } as axe.NodeResult & { failureSummary: string });
+		const reports: PluginReport[] = [
+			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [node] })] },
+		];
+		expect(formatReport(reports)).toContain('Fix any of the following: add aria-label');
+	});
+
+	it('omits failureSummary line when not present on a node', () => {
+		const node = makeNode();
+		delete (node as axe.NodeResult & { failureSummary?: string }).failureSummary;
+		const reports: PluginReport[] = [
+			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [node] })] },
+		];
+		const result = formatReport(reports);
+		expect(result).not.toContain('Fix any of the following');
+	});
+
+	it('falls back to help text when description is absent', () => {
+		const violation = makeViolation({ description: undefined });
+		const reports: PluginReport[] = [
+			{ pluginId: 'my-plugin', violations: [violation] },
+		];
+		expect(formatReport(reports)).toContain('Buttons must have an accessible name');
+	});
+
+	it('uses singular "element" in issue template for one node', () => {
+		const reports: PluginReport[] = [
+			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [makeNode()] })] },
+		];
+		expect(formatReport(reports)).toContain('1 element violate');
+	});
+
+	it('uses plural "elements" in issue template for multiple nodes', () => {
+		const reports: PluginReport[] = [
+			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [makeNode(), makeNode()] })] },
+		];
+		expect(formatReport(reports)).toContain('2 elements violate');
+	});
 });

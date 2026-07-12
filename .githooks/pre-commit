@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running tests with coverage check..."
+npm run test:coverage
+
+echo "Coverage check passed."

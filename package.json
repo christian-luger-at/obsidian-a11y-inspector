@@ -16,7 +16,8 @@
 		"release:publish": "bash release.sh --publish",
 		"release:patch": "bash release.sh --bump patch --publish",
 		"release:minor": "bash release.sh --bump minor --publish",
-		"release:major": "bash release.sh --bump major --publish"
+		"release:major": "bash release.sh --bump major --publish",
+		"prepare": "git config core.hooksPath .githooks"
 	},
 	"keywords": [],
 	"license": "0-BSD",
