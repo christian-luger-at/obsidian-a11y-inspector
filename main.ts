@@ -3,6 +3,7 @@ import { AUDIT_RULES, CORE_VIEW_TYPES, runAxe } from './src/rules';
 import { formatReport, reportFilename } from './src/report';
 import { DEFAULT_SETTINGS, WCAG_TAGS } from './src/settings';
 import { A11yInspectorSettingTab } from './src/settingTab';
+import { AuditView, AUDIT_VIEW_TYPE } from './src/auditView';
 import type { PluginReport } from './src/report';
 import type { A11yInspectorSettings } from './src/settings';
 
@@ -31,10 +32,16 @@ export default class A11yInspectorPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new A11yInspectorSettingTab(this.app, this));
+		this.registerView(AUDIT_VIEW_TYPE, leaf => new AuditView(leaf, () => void this.runAudit()));
 		this.addCommand({
 			id: 'run-audit',
 			name: 'Run audit',
-			callback: () => this.runAudit(),
+			callback: () => void this.runAudit(),
+		});
+		this.addCommand({
+			id: 'open-view',
+			name: 'Open sidebar view',
+			callback: () => void this.openView(),
 		});
 	}
 
@@ -62,6 +69,25 @@ export default class A11yInspectorPlugin extends Plugin {
 		// is applied via runOnly tags in a future iteration (#1).
 		void tags;
 		return [...AUDIT_RULES];
+	}
+
+	async openView(): Promise<void> {
+		const existing = this.app.workspace.getLeavesOfType(AUDIT_VIEW_TYPE);
+		if (existing.length > 0) {
+			await this.app.workspace.revealLeaf(existing[0]!);
+			return;
+		}
+		const leaf = this.app.workspace.getRightLeaf(false);
+		if (leaf) {
+			await leaf.setViewState({ type: AUDIT_VIEW_TYPE, active: true });
+			await this.app.workspace.revealLeaf(leaf);
+		}
+	}
+
+	private getAuditView(): AuditView | null {
+		const leaves = this.app.workspace.getLeavesOfType(AUDIT_VIEW_TYPE);
+		const view = leaves[0]?.view;
+		return view instanceof AuditView ? view : null;
 	}
 
 	private reportPath(filename: string): string {
@@ -152,9 +178,13 @@ export default class A11yInspectorPlugin extends Plugin {
 			await this.app.vault.create(path, md);
 		}
 
-		const file = this.app.vault.getAbstractFileByPath(path);
-		if (file instanceof TFile) {
-			await this.app.workspace.getLeaf().openFile(file);
+		// Update sidebar view if open, otherwise open it
+		const view = this.getAuditView();
+		if (view) {
+			view.update(reports);
+		} else {
+			await this.openView();
+			this.getAuditView()?.update(reports);
 		}
 
 		const totalViolations = reports.reduce((n, r) => n + r.violations.length, 0);

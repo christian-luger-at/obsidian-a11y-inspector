@@ -86,3 +86,54 @@ export class PluginSettingTab {
 		} as unknown as HTMLElement;
 	}
 }
+
+function makeEl(tag = 'div'): HTMLElement {
+	const el = document.createElement(tag);
+	// Obsidian DOM helpers
+	(el as unknown as Record<string, unknown>).createEl = (childTag: string, opts?: { cls?: string; text?: string; href?: string; attr?: Record<string, string> }) => {
+		const child = makeEl(childTag);
+		if (opts?.cls) child.className = opts.cls;
+		if (opts?.text) child.textContent = opts.text;
+		if (opts?.href) child.setAttribute('href', opts.href);
+		if (opts?.attr) Object.entries(opts.attr).forEach(([k, v]) => child.setAttribute(k, v));
+		el.appendChild(child);
+		return child;
+	};
+	(el as unknown as Record<string, unknown>).createDiv = (cls?: string) => {
+		const child = makeEl('div');
+		if (cls) child.className = cls;
+		el.appendChild(child);
+		return child;
+	};
+	(el as unknown as Record<string, unknown>).createSpan = (opts?: { cls?: string; text?: string }) => {
+		const child = makeEl('span');
+		if (opts?.cls) child.className = opts.cls;
+		if (opts?.text) child.textContent = opts.text;
+		el.appendChild(child);
+		return child;
+	};
+	(el as unknown as Record<string, unknown>).empty = () => { el.innerHTML = ''; };
+	(el as unknown as Record<string, unknown>).addClass = (cls: string) => el.classList.add(cls);
+	(el as unknown as Record<string, unknown>).hasClass = (cls: string) => el.classList.contains(cls);
+	(el as unknown as Record<string, unknown>).toggleClass = (cls: string, force?: boolean) => el.classList.toggle(cls, force);
+	(el as unknown as Record<string, unknown>).setAttr = (key: string, val: string) => el.setAttribute(key, val);
+	return el;
+}
+
+export class WorkspaceLeaf {}
+
+export class ItemView {
+	contentEl: HTMLElement;
+	leaf: WorkspaceLeaf;
+	constructor(leaf: WorkspaceLeaf) {
+		this.leaf = leaf;
+		this.contentEl = makeEl('div');
+	}
+	getViewType(): string { return ''; }
+	getDisplayText(): string { return ''; }
+	getIcon(): string { return ''; }
+	async onOpen(): Promise<void> {}
+	async onClose(): Promise<void> {}
+}
+
+export function setIcon(_el: HTMLElement, _icon: string): void {}
