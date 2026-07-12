@@ -1,0 +1,10 @@
+{
+	"id": "a11y-inspector",
+	"name": "A11y Inspector",
+	"version": "0.0.1",
+	"minAppVersion": "1.0.0",
+	"description": "Scans installed plugins for accessibility violations using axe-core.",
+	"author": "christian-luger.at",
+	"authorUrl": "https://github.com/christian-luger",
+	"isDesktopOnly": true
+}
