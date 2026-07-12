@@ -66,7 +66,8 @@ describe('A11yInspectorSettingTab', () => {
 	it('saves target plugin id on change', async () => {
 		const plugin = makePlugin();
 		const { settings } = makeTab(plugin);
-		await settings[0]?.lastDropdown?.triggerChange('dataview');
+		settings[0]?.lastDropdown?.triggerChange('dataview');
+		await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalled());
 		expect(plugin.settings.targetPluginId).toBe('dataview');
 		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
@@ -74,17 +75,17 @@ describe('A11yInspectorSettingTab', () => {
 	it('saves conformance level on change', async () => {
 		const plugin = makePlugin();
 		const { settings } = makeTab(plugin);
-		await settings[1]?.lastDropdown?.triggerChange('A');
+		settings[1]?.lastDropdown?.triggerChange('A');
+		await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalled());
 		expect(plugin.settings.wcagLevel).toBe('A');
-		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('saves best practices toggle on change', async () => {
 		const plugin = makePlugin();
 		const { settings } = makeTab(plugin);
-		await settings[2]?.lastToggle?.triggerChange(true);
+		settings[2]?.lastToggle?.triggerChange(true);
+		await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalled());
 		expect(plugin.settings.bestPractices).toBe(true);
-		expect(plugin.saveSettings).toHaveBeenCalled();
 	});
 
 	it('saves report folder on blur', async () => {

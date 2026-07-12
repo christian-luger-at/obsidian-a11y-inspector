@@ -52,10 +52,10 @@ export class A11yInspectorSettingTab extends PluginSettingTab {
 	private renderWcagLevelSetting(containerEl: HTMLElement): void {
 		new Setting(containerEl)
 			.setName('Conformance level')
-			.setDesc('Accessibility standard to check against. The recommended level also runs all minimum-level checks.')
+			.setDesc('Accessibility standard to check against. The higher level also runs all lower-level checks.')
 			.addDropdown(drop => {
-				drop.addOption('A', 'Minimum (level A)');
-				drop.addOption('AA', 'Recommended (level AA)');
+				drop.addOption('A', 'Minimum');
+				drop.addOption('AA', 'Recommended');
 				drop.setValue(this.plugin.settings.wcagLevel);
 				drop.onChange(async (value) => {
 					this.plugin.settings.wcagLevel = value as WcagLevel;
@@ -83,7 +83,7 @@ export class A11yInspectorSettingTab extends PluginSettingTab {
 			.setDesc('Folder inside the vault where audit reports are saved. Leave blank to save in the vault root.')
 			.addText(text => {
 				text
-					.setPlaceholder('E.g. audits/a11y')
+					.setPlaceholder('Audits/a11y')
 					.setValue(this.plugin.settings.reportFolder);
 				text.inputEl.addEventListener('blur', () => {
 					this.plugin.settings.reportFolder = text.getValue().trim();
