@@ -1,8 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { formatReport, reportFilename, PluginReport } from '../report';
-import type axe from 'axe-core';
+import { formatReport, reportFilename, PluginReport, AxeNode, AxeViolation } from '../report';
 
-function makeViolation(overrides: Partial<axe.Violation> = {}): axe.Violation {
+function makeNode(overrides: Partial<AxeNode> = {}): AxeNode {
+	return {
+		html: '<button class="icon-btn"></button>',
+		target: ['.icon-btn'],
+		failureSummary: 'Fix any of the following: Element does not have inner text',
+		any: [],
+		all: [],
+		none: [],
+		impact: 'critical',
+		...overrides,
+	};
+}
+
+function makeViolation(overrides: Partial<AxeViolation> = {}): AxeViolation {
 	return {
 		id: 'button-name',
 		impact: 'critical',
@@ -12,19 +24,7 @@ function makeViolation(overrides: Partial<axe.Violation> = {}): axe.Violation {
 		tags: ['wcag2a'],
 		nodes: [makeNode()],
 		...overrides,
-	} as axe.Violation;
-}
-
-function makeNode(overrides: Partial<axe.NodeResult> = {}): axe.NodeResult {
-	return {
-		html: '<button class="icon-btn"></button>',
-		target: ['.icon-btn'],
-		failureSummary: 'Fix any of the following: Element does not have inner text',
-		any: [],
-		all: [],
-		none: [],
-		...overrides,
-	} as axe.NodeResult;
+	};
 }
 
 describe('reportFilename', () => {
@@ -108,7 +108,7 @@ describe('formatReport', () => {
 	});
 
 	it('includes failureSummary when present on a node', () => {
-		const node = makeNode({ failureSummary: 'Fix any of the following: add aria-label' } as axe.NodeResult & { failureSummary: string });
+		const node = makeNode({ failureSummary: 'Fix any of the following: add aria-label' });
 		const reports: PluginReport[] = [
 			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [node] })] },
 		];
@@ -117,7 +117,7 @@ describe('formatReport', () => {
 
 	it('omits failureSummary line when not present on a node', () => {
 		const node = makeNode();
-		delete (node as axe.NodeResult & { failureSummary?: string }).failureSummary;
+		delete node.failureSummary;
 		const reports: PluginReport[] = [
 			{ pluginId: 'my-plugin', violations: [makeViolation({ nodes: [node] })] },
 		];

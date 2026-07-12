@@ -1,3 +1,18 @@
+import axe from 'axe-core';
+import type { AxeViolation } from './report';
+
+export interface AuditResult {
+	violations: AxeViolation[];
+}
+
+// Typed wrapper around axe.run — @types/axe-core predates the run() API.
+export async function runAxe(el: HTMLElement, rules: readonly string[]): Promise<AuditResult> {
+	const results = await (axe as unknown as {
+		run(el: HTMLElement, opts: unknown): Promise<{ violations: AxeViolation[] }>;
+	}).run(el, { runOnly: { type: 'rule', values: [...rules] } });
+	return { violations: results.violations };
+}
+
 export const AUDIT_RULES = [
 	'aria-input-field-name',
 	'label',

@@ -1,11 +1,25 @@
 import { Notice, Plugin, TFile } from 'obsidian';
-import axe from 'axe-core';
-import { AUDIT_RULES, CORE_VIEW_TYPES } from './src/rules';
+import { AUDIT_RULES, CORE_VIEW_TYPES, runAxe } from './src/rules';
 import { formatReport, reportFilename } from './src/report';
 import type { PluginReport } from './src/report';
 
+// Typed interface for the undocumented app.setting API, widely used in the community.
+interface ObsidianSettingTab {
+	id: string;
+	containerEl: HTMLElement;
+}
+interface ObsidianSetting {
+	open(): void;
+	close(): void;
+	openTabById(id: string): void;
+	settingTabs: ObsidianSettingTab[];
+}
+interface AppWithSetting {
+	setting: ObsidianSetting;
+}
+
 function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
 export default class A11yInspectorPlugin extends Plugin {
@@ -20,14 +34,13 @@ export default class A11yInspectorPlugin extends Plugin {
 	onunload() {}
 
 	private async runAudit() {
-		new Notice('A11y Inspector: scanning plugins…');
+		new Notice('A11y inspector: scanning plugins…');
 
 		const reports: PluginReport[] = [];
 
 		// Settings-tab sweep — exact plugin attribution via undocumented API
 		try {
-			// @ts-ignore — undocumented but widely used community API
-			const setting = this.app.setting;
+			const { setting } = this.app as unknown as AppWithSetting;
 			if (setting && typeof setting.open === 'function' && Array.isArray(setting.settingTabs)) {
 				setting.open();
 				await sleep(100);
@@ -37,11 +50,9 @@ export default class A11yInspectorPlugin extends Plugin {
 					try {
 						setting.openTabById(tab.id);
 						await sleep(80);
-						const results = await axe.run(tab.containerEl, {
-							runOnly: { type: 'rule', values: [...AUDIT_RULES] },
-						});
-						if (results.violations.length > 0) {
-							reports.push({ pluginId: tab.id, violations: results.violations });
+						const { violations } = await runAxe(tab.containerEl, AUDIT_RULES);
+						if (violations.length > 0) {
+							reports.push({ pluginId: tab.id, violations });
 						}
 					} catch {
 						// skip tabs that fail to render
@@ -65,15 +76,13 @@ export default class A11yInspectorPlugin extends Plugin {
 
 		for (const { type, containerEl } of leaves) {
 			try {
-				const results = await axe.run(containerEl, {
-					runOnly: { type: 'rule', values: [...AUDIT_RULES] },
-				});
-				if (results.violations.length > 0) {
+				const { violations } = await runAxe(containerEl, AUDIT_RULES);
+				if (violations.length > 0) {
 					const existing = reports.find(r => r.pluginId === type);
 					if (existing) {
-						existing.violations.push(...results.violations);
+						existing.violations.push(...violations);
 					} else {
-						reports.push({ pluginId: type, violations: results.violations });
+						reports.push({ pluginId: type, violations });
 					}
 				}
 			} catch {
@@ -97,6 +106,6 @@ export default class A11yInspectorPlugin extends Plugin {
 		}
 
 		const totalViolations = reports.reduce((n, r) => n + r.violations.length, 0);
-		new Notice(`A11y Inspector: done — ${totalViolations} violations in ${reports.length} plugins`);
+		new Notice(`A11y inspector: done — ${totalViolations} violations in ${reports.length} plugins`);
 	}
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AUDIT_RULES, CORE_VIEW_TYPES } from '../rules';
 
 describe('AUDIT_RULES', () => {
@@ -27,5 +27,27 @@ describe('CORE_VIEW_TYPES', () => {
 	it('does not include custom plugin view types', () => {
 		expect(CORE_VIEW_TYPES.has('kanban')).toBe(false);
 		expect(CORE_VIEW_TYPES.has('dataview')).toBe(false);
+	});
+});
+
+describe('runAxe', () => {
+	beforeEach(() => {
+		vi.resetModules();
+	});
+
+	it('returns violations from axe.run', async () => {
+		const fakeViolation = { id: 'button-name', nodes: [] };
+		vi.doMock('axe-core', () => ({
+			default: {
+				run: vi.fn().mockResolvedValue({ violations: [fakeViolation] }),
+			},
+		}));
+
+		const { runAxe: runAxeMocked } = await import('../rules');
+		const el = {} as HTMLElement;
+		const result = await runAxeMocked(el, ['button-name']);
+
+		expect(result.violations).toHaveLength(1);
+		expect(result.violations[0]?.id).toBe('button-name');
 	});
 });

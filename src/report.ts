@@ -1,8 +1,12 @@
 import type axe from 'axe-core';
 
+// axe-core's @types package omits failureSummary which exists at runtime.
+export type AxeNode = axe.NodeResult & { failureSummary?: string };
+export type AxeViolation = Omit<axe.Violation, 'nodes'> & { nodes: AxeNode[] };
+
 export interface PluginReport {
 	pluginId: string;
-	violations: axe.Violation[];
+	violations: AxeViolation[];
 }
 
 export function formatReport(reports: PluginReport[], date: Date = new Date()): string {
@@ -41,14 +45,12 @@ export function formatReport(reports: PluginReport[], date: Date = new Date()): 
 			for (const node of v.nodes) {
 				const selector = node.target.join(', ');
 				const snippet = node.html.slice(0, 120);
-				// failureSummary exists at runtime but is missing from @types/axe-core
-				const summary = (node as axe.NodeResult & { failureSummary?: string }).failureSummary;
 				lines.push(`- \`${selector}\``);
 				lines.push(`  \`\`\`html`);
 				lines.push(`  ${snippet}`);
 				lines.push(`  \`\`\``);
-				if (summary) {
-					lines.push(`  ${summary.split('\n')[0]}`);
+				if (node.failureSummary) {
+					lines.push(`  ${node.failureSummary.split('\n')[0]}`);
 				}
 				lines.push('');
 			}
@@ -76,6 +78,6 @@ export function formatReport(reports: PluginReport[], date: Date = new Date()): 
 	return lines.join('\n');
 }
 
-export function reportFilename(date = new Date()): string {
+export function reportFilename(date: Date = new Date()): string {
 	return `a11y-report-${date.toISOString().slice(0, 10)}.md`;
 }
