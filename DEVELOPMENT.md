@@ -208,7 +208,7 @@ Getting the plugin into the in-app **Community Plugins** browser is a **one-time
 - **`manifest.json`** sits in the repo root with a unique `id` (`a11y-inspector`), a `name` that doesn't start with "Obsidian", a concise `description`, plus `author`, `minAppVersion`, and `isDesktopOnly: true`.
 - **`versions.json`** maps each released plugin version to its minimum Obsidian version.
 - A **`LICENSE`** file and a **`README.md`** (what it does + how to use it) exist.
-- No leftover sample-plugin code, no `console.log` — the source is public and reviewable.
+- No `console.log` or debug output — the source is public and reviewable.
 - A **GitHub release** exists whose **tag equals the `manifest.json` version exactly, with no `v` prefix**, with `main.js`, `manifest.json`, and `styles.css` attached as assets.
 
 Run `npm run lint` then cut the release with `npm run release:publish`.

@@ -169,7 +169,7 @@ import { Plugin } from 'obsidian';
 import { MySettings, DEFAULT_SETTINGS } from './settings';
 import { registerCommands } from './commands';
 
-export default class MyPlugin extends Plugin {
+export default class A11yInspectorPlugin extends Plugin {
 	settings!: MySettings;
 
 	async onload() {
