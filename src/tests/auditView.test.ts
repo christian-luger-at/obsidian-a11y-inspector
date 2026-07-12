@@ -27,10 +27,12 @@ function makeReport(pluginId: string, count = 1): PluginReport {
 describe('AuditView', () => {
 	let view: AuditView;
 	let onRerun: ReturnType<typeof vi.fn>;
+	let onHighlight: ReturnType<typeof vi.fn>;
 
 	beforeEach(() => {
 		onRerun = vi.fn();
-		view = new AuditView(makeLeaf(), onRerun);
+		onHighlight = vi.fn();
+		view = new AuditView(makeLeaf(), onRerun, onHighlight);
 	});
 
 	it('returns correct view type', () => {
@@ -172,5 +174,36 @@ describe('AuditView', () => {
 		]);
 		expect(view.contentEl.textContent).toContain('bad-plugin');
 		expect(view.contentEl.textContent).not.toContain('ok-plugin');
+	});
+
+	it('calls onHighlight with deepest selector when selector button is clicked', () => {
+		view.update([makeReport('my-plugin')]);
+		const btn = view.contentEl.querySelector('button.a11y-view__selector-btn') as HTMLButtonElement;
+		btn?.click();
+		expect(onHighlight).toHaveBeenCalledWith('.some-el');
+	});
+
+	it('selector button aria-label contains selector text', () => {
+		view.update([makeReport('my-plugin')]);
+		const btn = view.contentEl.querySelector('button.a11y-view__selector-btn') as HTMLButtonElement;
+		expect(btn?.getAttribute('aria-label')).toContain('.some-el');
+	});
+
+	it('uses last target segment as highlight selector for nested targets', () => {
+		const report: PluginReport = {
+			pluginId: 'my-plugin',
+			violations: [{
+				id: 'rule-x',
+				impact: 'serious',
+				help: 'Help',
+				helpUrl: 'https://example.com',
+				description: 'Desc',
+				nodes: [{ target: ['iframe', '.inner-el'], html: '<a>', failureSummary: 'Fix' }],
+			}],
+		};
+		view.update([report]);
+		const btn = view.contentEl.querySelector('button.a11y-view__selector-btn') as HTMLButtonElement;
+		btn?.click();
+		expect(onHighlight).toHaveBeenCalledWith('.inner-el');
 	});
 });

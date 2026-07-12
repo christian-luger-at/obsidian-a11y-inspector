@@ -1,5 +1,5 @@
 import { Notice, Plugin, TFile } from 'obsidian';
-import { AUDIT_RULES, CORE_VIEW_TYPES, runAxe } from './src/rules';
+import { CORE_VIEW_TYPES, runAxe } from './src/rules';
 import { formatReport, reportFilename } from './src/report';
 import { DEFAULT_SETTINGS, WCAG_TAGS } from './src/settings';
 import { A11yInspectorSettingTab } from './src/settingTab';
@@ -32,7 +32,11 @@ export default class A11yInspectorPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new A11yInspectorSettingTab(this.app, this));
-		this.registerView(AUDIT_VIEW_TYPE, leaf => new AuditView(leaf, () => void this.runAudit()));
+		this.registerView(AUDIT_VIEW_TYPE, leaf => new AuditView(
+			leaf,
+			() => void this.runAudit(),
+			(selector) => this.highlightElement(selector),
+		));
 		this.addCommand({
 			id: 'run-audit',
 			name: 'Run audit',
@@ -59,16 +63,10 @@ export default class A11yInspectorPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private effectiveRules(): string[] {
-		const tags = WCAG_TAGS[this.settings.wcagLevel];
-		if (this.settings.bestPractices) {
-			return [...AUDIT_RULES];
-		}
-		// Filter AUDIT_RULES to those matching the selected WCAG tags.
-		// For now we run all curated rules regardless — WCAG tag filtering
-		// is applied via runOnly tags in a future iteration (#1).
-		void tags;
-		return [...AUDIT_RULES];
+	private effectiveTags(): string[] {
+		const tags = [...WCAG_TAGS[this.settings.wcagLevel]];
+		if (this.settings.bestPractices) tags.push('best-practice');
+		return tags;
 	}
 
 	async openView(): Promise<void> {
@@ -82,6 +80,17 @@ export default class A11yInspectorPlugin extends Plugin {
 			await leaf.setViewState({ type: AUDIT_VIEW_TYPE, active: true });
 			await this.app.workspace.revealLeaf(leaf);
 		}
+	}
+
+	private highlightElement(selector: string): void {
+		const el = document.querySelector(selector);
+		if (!el) {
+			new Notice(`A11y inspector: element not found — is the plugin's UI currently open?\n${selector}`);
+			return;
+		}
+		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		el.classList.add('a11y-inspector--highlight');
+		window.setTimeout(() => { el.classList.remove('a11y-inspector--highlight'); }, 2000);
 	}
 
 	private getAuditView(): AuditView | null {
@@ -99,7 +108,7 @@ export default class A11yInspectorPlugin extends Plugin {
 		new Notice('A11y inspector: scanning plugins…');
 
 		const reports: PluginReport[] = [];
-		const rules = this.effectiveRules();
+		const tags = this.effectiveTags();
 		const targetId = this.settings.targetPluginId;
 
 		try {
@@ -117,7 +126,7 @@ export default class A11yInspectorPlugin extends Plugin {
 					try {
 						setting.openTabById(tab.id);
 						await sleep(80);
-						const { violations } = await runAxe(tab.containerEl, rules);
+						const { violations } = await runAxe(tab.containerEl, tags);
 						if (violations.length > 0) {
 							reports.push({ pluginId: tab.id, violations });
 						}
@@ -144,7 +153,7 @@ export default class A11yInspectorPlugin extends Plugin {
 
 			for (const { type, containerEl } of leaves) {
 				try {
-					const { violations } = await runAxe(containerEl, rules);
+					const { violations } = await runAxe(containerEl, tags);
 					if (violations.length > 0) {
 						const existing = reports.find(r => r.pluginId === type);
 						if (existing) {

@@ -1,8 +1,9 @@
-/*
+.a11y-view__violation-body--collapsed {
+	display: none;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+/* Temporary highlight applied when clicking a violation node selector */
+.a11y-inspector--highlight {
+	outline: 2px solid red !important;
+	outline-offset: 2px;
+}

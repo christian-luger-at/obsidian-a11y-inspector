@@ -13,10 +13,12 @@ const IMPACT_CLASS: Record<string, string> = {
 export class AuditView extends ItemView {
 	private reports: PluginReport[] = [];
 	private onRerun: () => void;
+	private onHighlight: (selector: string) => void;
 
-	constructor(leaf: WorkspaceLeaf, onRerun: () => void) {
+	constructor(leaf: WorkspaceLeaf, onRerun: () => void, onHighlight: (selector: string) => void) {
 		super(leaf);
 		this.onRerun = onRerun;
+		this.onHighlight = onHighlight;
 	}
 
 	getViewType(): string {
@@ -125,7 +127,14 @@ export class AuditView extends ItemView {
 
 		const selectorList = body.createEl('ul', { cls: 'a11y-view__selectors' });
 		for (const node of v.nodes) {
-			selectorList.createEl('li').createEl('code', { text: node.target.join(', ') });
+			const selector = node.target[node.target.length - 1] ?? node.target.join(' ');
+			const li = selectorList.createEl('li');
+			const btn = li.createEl('button', {
+				cls: 'a11y-view__selector-btn',
+				attr: { 'aria-label': `Highlight element: ${selector}` },
+			});
+			btn.createEl('code', { text: node.target.join(', ') });
+			btn.addEventListener('click', () => this.onHighlight(selector));
 		}
 
 		this.renderIssueTemplate(body, v);

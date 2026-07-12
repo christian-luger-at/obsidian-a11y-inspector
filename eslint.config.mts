@@ -14,6 +14,7 @@ export default defineConfig(
 		'package.json',
 		'package-lock.json',
 		'tsconfig.json',
+		'src/tests/__mocks__/',
 	]),
 	{
 		languageOptions: {
